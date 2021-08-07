@@ -8,7 +8,10 @@ import sys
 import time
 
 import logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    format="%(asctime)-15s %(levelname)-8s : %(message)s",
+    level=logging.INFO
+)
 logger = logging.getLogger()
 
 
@@ -55,7 +58,7 @@ if not discordXSuperProperties or not discordAuthorization:
     raise Exception("Must include environment variables with client auth")
 
 # assume prefix of syn/req
-messageReqRegex = re.compile("(req|syn|signal)[-: ]+[0-9a-zA-Z]{32}", re.IGNORECASE)
+messageReqRegex = re.compile("((req|syn|signal)[-: ]+[0-9a-zA-Z]{32}|^[0-9a-zA-Z]{32}$)", re.IGNORECASE)
 # assume the initial key is a response to a request
 messageReplyRegex = re.compile("^((resp|res)[-: ]*)?[^a-zA-Z0-9]*[a-zA-Z0-9]{32}[^a-zA-Z0-9]*")
 # key extraction regex
@@ -233,6 +236,7 @@ if __name__ == "__main__":
     else:
         try:
             while True:
+                logger.info("Checking for new requests/replies...")
                 res = getMessages(sesh)
                 responseJson = res.json()
 
@@ -249,7 +253,7 @@ if __name__ == "__main__":
                     discordResponse = generateReqResponse(req["messageId"])
                     discordResponse["content"] = f"res: {replyToken[0]} \r\nREQ: {BADGE_REQ_TOKEN}"
                     sendMessage(sesh, discordResponse)
-                    time.sleep(2)
+                    time.sleep(3)
                     PROCESSED_REQ_BUFFER.append(user)
                     requestFile.write(user + "\n")
 
@@ -258,11 +262,11 @@ if __name__ == "__main__":
                     replyToken = badgeSubmitToken(reply["token"])
                     discordResponse = generateReqResponse(reply["messageId"])
                     sendMessage(sesh, discordResponse)
-                    time.sleep(2)
+                    time.sleep(3)
                     PROCESSED_REPLY_BUFFER.append(user)
                     replyFile.write(user + "\n")
 
-                time.sleep(15)
+                time.sleep(30)
         except:
             requestFile.close()
             replyFile.close()
