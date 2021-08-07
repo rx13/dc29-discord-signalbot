@@ -5,7 +5,7 @@ import serial
 import time
 
 import logging
-logging.basicConfig(level=logging.WARNING)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -110,13 +110,17 @@ def getReplies(messages):
                     replies[user] = responseKey
     return replies
 
+def sendBadgeCommand(cmd):
+    badge.write(cmd.encode('utf-8'))
+    print(badge.read_all())
+
 if __name__ == "__main__":
     sesh = requests.Session()
     sesh.headers = headers
 
     badge = serial.Serial(BADGE_CHANNEL)
-
-    logger.info(sesh.headers)
+    print(badge.read_all())
+    sendBadgeCommand("\n")
 
     while True:
         res = getMessages(sesh)
@@ -127,10 +131,10 @@ if __name__ == "__main__":
         replies = getReplies(responseJson[LAST_MESSAGE_ID:])
 
         if lastReqID != LAST_MESSAGE_ID:
-            LAST_MESSAGE_ID = lastReqID
-        
+            LAST_MESSAGE_ID = lastReqID        
         
         for user,reqKey in requests.items():
+            logger.info(f"Processing request from {user}")
             PROCESSED_REQ_BUFFER.append(user)
 
         time.sleep(15)
