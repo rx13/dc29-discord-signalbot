@@ -2,11 +2,12 @@ import os
 import re
 import requests
 import serial
+import sys
 import time
 
 import logging
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 
 
 ############
@@ -39,7 +40,7 @@ if not discordXSuperProperties or not discordAuthorization:
     raise Exception("Must include environment variables with client auth")
 
 # assume prefix of syn/req
-messageReqRegex = re.compile("(req|syn)[: ]+[0-9a-zA-Z]{32}", re.IGNORECASE)
+messageReqRegex = re.compile("(req|syn)[-: ]+[0-9a-zA-Z]{32}", re.IGNORECASE)
 # assume the initial key is a response to a request
 messageReplyRegex = re.compile("^[^a-zA-Z0-9]*[a-zA-Z0-9]{32}[^a-zA-Z0-9]*")
 # key extraction regex
@@ -89,7 +90,7 @@ def getReqs(messages):
         if messageReqRegex.search(message["content"]):
             match = messageReqRegex.search(message["content"])[0]
             reqKey = keyMatchRegex.search(match)[0]
-            user = message["author"]["id"]
+            user = message["author"]["username"]
             if reqKey != None and user not in PROCESSED_REQ_BUFFER:
                 reqs[user] = reqKey
             lastReqID = message["id"]
@@ -110,19 +111,42 @@ def getReplies(messages):
                     replies[user] = responseKey
     return replies
 
+def getBadgeOutput(lastcmd=b""):
+    output = b""
+    line = badge.read_all()
+    output += line
+    time.sleep(0.25)
+    while not line.endswith(b"\x00") or badge.out_waiting > 0:
+        line = badge.read_all()
+        output += line
+        if line == b"":
+            if lastcmd.strip() == b"":
+                break
+    print(output.decode('utf-8'))
+
 def sendBadgeCommand(cmd):
-    badge.write(cmd.encode('utf-8'))
-    print(badge.read_all())
+    if not isinstance(cmd, bytes):
+        cmd = cmd.encode('utf-8')
+    badge.write(cmd)
+    badge.flush()
+    getBadgeOutput(cmd)
 
 if __name__ == "__main__":
     sesh = requests.Session()
     sesh.headers = headers
 
     badge = serial.Serial(BADGE_CHANNEL)
-    print(badge.read_all())
-    sendBadgeCommand("\n")
+    getBadgeOutput()
+    sendBadgeCommand("\r\n")
 
-    while True:
+    if "--interactive" in sys.argv:
+        try:
+            while True:
+                cmd = input("cmd: ")
+                sendBadgeCommand(cmd)
+        except KeyboardInterrupt:
+            badge.close()
+    else:
         res = getMessages(sesh)
         responseJson = res.json()
 
@@ -134,7 +158,8 @@ if __name__ == "__main__":
             LAST_MESSAGE_ID = lastReqID        
         
         for user,reqKey in requests.items():
-            logger.info(f"Processing request from {user}")
+            logger.info(f"Processing SIGNAL REQ from {user}")
+
             PROCESSED_REQ_BUFFER.append(user)
 
         time.sleep(15)
