@@ -61,7 +61,7 @@ if not discordXSuperProperties or not discordAuthorization:
 # assume prefix of syn/req
 messageReqRegex = re.compile("((req|syn|signal)[-: ]?[0-9a-zA-Z]{32}|^[^res]*[0-9a-zA-Z]{32}$)", re.IGNORECASE)
 # assume the initial key is a response to a request
-messageReplyRegex = re.compile("^((resp|res)[-: ]*)?[^a-zA-Z0-9]*[a-zA-Z0-9]{32}[^a-zA-Z0-9]*")
+messageReplyRegex = re.compile("^((resp|res)[-: ]*)?[^a-zA-Z0-9]*[a-zA-Z0-9]{32}[^a-zA-Z0-9]*", re.IGNORECASE)
 # key extraction regex
 keyMatchRegex = re.compile("[a-zA-Z0-9]{32}")
 
@@ -197,10 +197,13 @@ def badgeSubmitToken(token):
     resKey = keyMatchRegex.search(response.replace(token, ""))
     if not resKey and not "Invalid Input" in response and not "not for your badge" in response:
         logger.warning(f"Successfully processed {token}")
+    elif not resKey and "Badge successfully connected" in response:
+        logger.warning(f"Successfully processed {token}")
     elif resKey:
         logger.warning(f"Generated reply key: {resKey[0]}")
     else:
         if "not for your badge" in response:
+            logger.info("Not a request token")
             return None
         logger.error(f"Request failed for token: {token} -- {response}")
     return resKey
@@ -253,7 +256,7 @@ if __name__ == "__main__":
                 for user,req in requests.items():
                     logger.info(f"Processing SIGNAL REQ from {user}")
                     replyToken = badgeSubmitToken(req["token"])
-                    if not replyToken:
+                    if not replyToken:    
                         continue
                     discordResponse = generateReqResponse(req["messageId"])
                     discordResponse["content"] = f"res: {replyToken[0]} \r\nREQ: {BADGE_REQ_TOKEN}"
