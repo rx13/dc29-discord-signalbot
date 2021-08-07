@@ -8,12 +8,23 @@ import logging
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
 
+
+############
+#
+#   CONFIGURABLES
+#
+
 #URL for 
 dc29SignalChat = 'https://discord.com/api/v9/channels/872838274610262086/messages?limit=50'
 
 #NOTE: REPLACE THIS WITH YOUR USER
 DISCORD_USER = "rx13"
 BADGE_CHANNEL = "COM3" #/dev/tty# or COM#
+
+########### 
+#
+#   MAIN
+#
 
 # KEEP TRACK OF USERS WE ALREADY HAVE, prevent dupes
 PROCESSED_REQ_BUFFER = []
@@ -23,6 +34,9 @@ LAST_MESSAGE_ID = 0
 # load sensitive from environment
 discordXSuperProperties = os.environ.get("DISCORD_XSUPER")
 discordAuthorization = os.environ.get("DISCORD_AUTHORIZATION")
+
+if not discordXSuperProperties or not discordAuthorization:
+    raise Exception("Must include environment variables with client auth")
 
 # assume prefix of syn/req
 messageReqRegex = re.compile("(req|syn)[: ]+[0-9a-zA-Z]{32}", re.IGNORECASE)
