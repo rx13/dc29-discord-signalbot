@@ -1,4 +1,6 @@
+import copy
 import os
+import random
 import re
 import requests
 import serial
@@ -16,7 +18,8 @@ logger = logging.getLogger()
 #
 
 #URL for 
-dc29SignalChat = 'https://discord.com/api/v9/channels/872838274610262086/messages?limit=50'
+dc29SignalChat = 'https://discord.com/api/v9/channels/872838274610262086/messages'
+dc29SignalChatReq = f"{dc29SignalChat}?limit=50"
 
 #NOTE: REPLACE THIS WITH YOUR USER
 DISCORD_USER = "rx13"
@@ -30,7 +33,19 @@ BADGE_CHANNEL = "COM3" #/dev/tty# or COM#
 # KEEP TRACK OF USERS WE ALREADY HAVE, prevent dupes
 PROCESSED_REQ_BUFFER = []
 PROCESSED_REPLY_BUFFER = []
+
+if os.path.exists("requests.txt"):
+    with open("requests.txt", "r") as f:
+        for line in f:
+            PROCESSED_REQ_BUFFER.append(line.strip())
+
+if os.path.exists("replies.txt"):
+    with open("replies.txt", "r") as f:
+        for line in f:
+            PROCESSED_REPLY_BUFFER.append(line.strip())
+
 LAST_MESSAGE_ID = 0
+BADGE_REQ_TOKEN = None
 
 # load sensitive from environment
 discordXSuperProperties = os.environ.get("DISCORD_XSUPER")
@@ -40,9 +55,9 @@ if not discordXSuperProperties or not discordAuthorization:
     raise Exception("Must include environment variables with client auth")
 
 # assume prefix of syn/req
-messageReqRegex = re.compile("(req|syn)[-: ]+[0-9a-zA-Z]{32}", re.IGNORECASE)
+messageReqRegex = re.compile("(req|syn|signal)[-: ]+[0-9a-zA-Z]{32}", re.IGNORECASE)
 # assume the initial key is a response to a request
-messageReplyRegex = re.compile("^[^a-zA-Z0-9]*[a-zA-Z0-9]{32}[^a-zA-Z0-9]*")
+messageReplyRegex = re.compile("^((resp|res)[-: ]*)?[^a-zA-Z0-9]*[a-zA-Z0-9]{32}[^a-zA-Z0-9]*")
 # key extraction regex
 keyMatchRegex = re.compile("[a-zA-Z0-9]{32}")
 
@@ -64,10 +79,30 @@ headers = {
         "sec-gpc": '1',
     }
 
+jsonReqReply = {
+    "content":":thumbsup:",
+    "nonce":"<OVERWRITE>",
+    "tts": False,
+    "message_reference":{
+        "guild_id":"708208267699945503",
+        "channel_id":"872838274610262086",
+        "message_id":"<OVERWRITE>"
+        }
+    }
+
 def getMessages(sesh):
-    res = sesh.get(dc29SignalChat)
+    res = sesh.get(dc29SignalChatReq)
     if res.ok:
         return res
+    else:
+        logger.fatal(res.text)
+        raise Exception("Failed to auth, update XSuper and Authorization and try again")
+
+
+def sendMessage(sesh, payload):
+    res = sesh.post(dc29SignalChat, json=payload)
+    if res.ok:
+        return True
     else:
         logger.fatal(res.text)
         raise Exception("Failed to auth, update XSuper and Authorization and try again")
@@ -87,12 +122,17 @@ def getReqs(messages):
     lastReqID = 0
     reqs = {}
     for message in messages:
+        if message["author"]["username"] == DISCORD_USER:
+            continue
         if messageReqRegex.search(message["content"]):
             match = messageReqRegex.search(message["content"])[0]
             reqKey = keyMatchRegex.search(match)[0]
             user = message["author"]["username"]
             if reqKey != None and user not in PROCESSED_REQ_BUFFER:
-                reqs[user] = reqKey
+                reqs[user] = {
+                    "token": reqKey,
+                    "messageId": message["id"]
+                }
             lastReqID = message["id"]
     return reqs, lastReqID
 
@@ -100,15 +140,21 @@ def getReqs(messages):
 def getReplies(messages):
     replies = {}
     for message in messages:
+        if message["author"]["username"] == DISCORD_USER:
+            continue
         inMentions = False
+        # we assume any reply with us as a mention is a REQ REPLY
         mentioned = [mention for mention in message["mentions"] if mention["username"] == DISCORD_USER]
         if mentioned:
             if messageReplyRegex.search(message["content"]):
                 replymatch = messageReplyRegex.search(message["content"])[0]
                 responseKey = keyMatchRegex.search(replymatch)[0]
-                user = message["author"]["id"]
+                user = message["author"]["username"]
                 if responseKey != None and user not in PROCESSED_REPLY_BUFFER:
-                    replies[user] = responseKey
+                    replies[user] = {
+                        "token": responseKey,
+                        "messageId": message["id"]
+                    }
     return replies
 
 def getBadgeOutput(lastcmd=b""):
@@ -122,44 +168,101 @@ def getBadgeOutput(lastcmd=b""):
         if line == b"":
             if lastcmd.strip() == b"":
                 break
-    print(output.decode('utf-8'))
+    return output.decode('utf-8')
 
 def sendBadgeCommand(cmd):
     if not isinstance(cmd, bytes):
         cmd = cmd.encode('utf-8')
     badge.write(cmd)
     badge.flush()
-    getBadgeOutput(cmd)
+    return getBadgeOutput(cmd)
+
+def badgeGetRequestToken():
+    response = sendBadgeCommand("4")
+    reqKey = keyMatchRegex.search(response)
+    while not reqKey:
+        logger.warning(f"failed to grab reqKey from '{response}', trying again")
+        time.sleep(.25)
+        reqKey = badgeGetRequestToken()
+    return reqKey[0]
+
+def badgeSubmitToken(token):
+    response = sendBadgeCommand("5")
+    response += sendBadgeCommand(token + "\r\n")
+    response += sendBadgeCommand("\r\n")
+    resKey = keyMatchRegex.search(response)
+    if not resKey and not "Invalid Input" in response:
+        logger.warning(f"Successfully processed {token}: {response}")
+    elif resKey:
+        logger.warning(f"Generated reply key: {resKey[0]}")
+    else:
+        logger.error(f"Request failed for token: {token} -- {response}")
+    return resKey
+
+def generateReqResponse(messageId):
+    response = copy.deepcopy(jsonReqReply)
+    response["nonce"] = random.randint(100000000000000000,999999999999999999)
+    response["message_reference"]["message_id"] = messageId
+    return response
 
 if __name__ == "__main__":
     sesh = requests.Session()
     sesh.headers = headers
 
+    requestFile = open("requests.txt", "a+")
+    replyFile = open("replies.txt", "a+")
+
     badge = serial.Serial(BADGE_CHANNEL)
     getBadgeOutput()
-    sendBadgeCommand("\r\n")
+    sendBadgeCommand("n\r\n") # send 'N' just in case someone is on reset screen
+
+    BADGE_REQ_TOKEN = badgeGetRequestToken()
+    logger.warning(f"Using badge REQ TOKEN: {BADGE_REQ_TOKEN}")
 
     if "--interactive" in sys.argv:
         try:
             while True:
                 cmd = input("cmd: ")
-                sendBadgeCommand(cmd)
+                if cmd == "5":
+                    cmd = input("Enter reply/request token: ")
+                    print(badgeSubmitToken(cmd))
+                else:
+                    print(sendBadgeCommand(cmd))
         except KeyboardInterrupt:
             badge.close()
     else:
-        res = getMessages(sesh)
-        responseJson = res.json()
+        try:
+            while True:
+                res = getMessages(sesh)
+                responseJson = res.json()
 
-        LAST_MESSAGE_ID = getLastMessageIndex(responseJson)
-        requests, lastReqID = getReqs(responseJson[LAST_MESSAGE_ID:])
-        replies = getReplies(responseJson[LAST_MESSAGE_ID:])
+                LAST_MESSAGE_ID = getLastMessageIndex(responseJson)
+                requests, lastReqID = getReqs(responseJson[LAST_MESSAGE_ID:])
+                replies = getReplies(responseJson[LAST_MESSAGE_ID:])
 
-        if lastReqID != LAST_MESSAGE_ID:
-            LAST_MESSAGE_ID = lastReqID        
-        
-        for user,reqKey in requests.items():
-            logger.info(f"Processing SIGNAL REQ from {user}")
+                if lastReqID != LAST_MESSAGE_ID:
+                    LAST_MESSAGE_ID = lastReqID        
+                
+                for user,req in requests.items():
+                    logger.info(f"Processing SIGNAL REQ from {user}")
+                    replyToken = badgeSubmitToken(req["token"])
+                    discordResponse = generateReqResponse(req["messageId"])
+                    discordResponse["content"] = f"res: {replyToken[0]} \r\nREQ: {BADGE_REQ_TOKEN}"
+                    sendMessage(sesh, discordResponse)
+                    time.sleep(2)
+                    PROCESSED_REQ_BUFFER.append(user)
+                    requestFile.write(user + "\n")
 
-            PROCESSED_REQ_BUFFER.append(user)
+                for user,reply in replies.items():
+                    logger.info(f"Processing SIGNAL REPLY from {user}")
+                    replyToken = badgeSubmitToken(reply["token"])
+                    discordResponse = generateReqResponse(reply["messageId"])
+                    sendMessage(sesh, discordResponse)
+                    time.sleep(2)
+                    PROCESSED_REPLY_BUFFER.append(user)
+                    replyFile.write(user + "\n")
 
-        time.sleep(15)
+                time.sleep(15)
+        except:
+            requestFile.close()
+            replyFile.close()
