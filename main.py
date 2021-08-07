@@ -23,6 +23,7 @@ logger = logging.getLogger()
 #URL for 
 dc29SignalChat = 'https://discord.com/api/v9/channels/872838274610262086/messages'
 dc29SignalChatReq = f"{dc29SignalChat}?limit=50"
+dc29SignalChatReact = "{dc29SignalChat}/{messageID}/reactions/%F0%9F%91%8D/%40me"
 
 #NOTE: REPLACE THIS WITH YOUR USER
 DISCORD_USER = "rx13"
@@ -58,7 +59,7 @@ if not discordXSuperProperties or not discordAuthorization:
     raise Exception("Must include environment variables with client auth")
 
 # assume prefix of syn/req
-messageReqRegex = re.compile("((req|syn|signal)[-: ]+[0-9a-zA-Z]{32}|^[0-9a-zA-Z]{32}$)", re.IGNORECASE)
+messageReqRegex = re.compile("((req|syn|signal)[-: ]?[0-9a-zA-Z]{32}|^[^res]*[0-9a-zA-Z]{32}$)", re.IGNORECASE)
 # assume the initial key is a response to a request
 messageReplyRegex = re.compile("^((resp|res)[-: ]*)?[^a-zA-Z0-9]*[a-zA-Z0-9]{32}[^a-zA-Z0-9]*")
 # key extraction regex
@@ -193,12 +194,14 @@ def badgeSubmitToken(token):
     response = sendBadgeCommand("5")
     response += sendBadgeCommand(token + "\r\n")
     response += sendBadgeCommand("\r\n")
-    resKey = keyMatchRegex.search(response)
-    if not resKey and not "Invalid Input" in response:
-        logger.warning(f"Successfully processed {token}: {response}")
+    resKey = keyMatchRegex.search(response.replace(token, ""))
+    if not resKey and not "Invalid Input" in response and not "not for your badge" in response:
+        logger.warning(f"Successfully processed {token}")
     elif resKey:
         logger.warning(f"Generated reply key: {resKey[0]}")
     else:
+        if "not for your badge" in response:
+            return None
         logger.error(f"Request failed for token: {token} -- {response}")
     return resKey
 
@@ -250,6 +253,8 @@ if __name__ == "__main__":
                 for user,req in requests.items():
                     logger.info(f"Processing SIGNAL REQ from {user}")
                     replyToken = badgeSubmitToken(req["token"])
+                    if not replyToken:
+                        continue
                     discordResponse = generateReqResponse(req["messageId"])
                     discordResponse["content"] = f"res: {replyToken[0]} \r\nREQ: {BADGE_REQ_TOKEN}"
                     sendMessage(sesh, discordResponse)
@@ -261,12 +266,12 @@ if __name__ == "__main__":
                     logger.info(f"Processing SIGNAL REPLY from {user}")
                     replyToken = badgeSubmitToken(reply["token"])
                     discordResponse = generateReqResponse(reply["messageId"])
-                    sendMessage(sesh, discordResponse)
+                    sesh.put(dc29SignalChatReact.format(dc29SignalChat=dc29SignalChat, messageID=reply["messageId"]))
                     time.sleep(3)
                     PROCESSED_REPLY_BUFFER.append(user)
                     replyFile.write(user + "\n")
 
-                time.sleep(30)
-        except:
+                time.sleep(random.randint(27,37))
+        except KeyboardInterrupt:
             requestFile.close()
             replyFile.close()
