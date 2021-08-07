@@ -38,6 +38,8 @@ Now you're ready to install the required packages.
 
 ## Usage
 
+!!! **NOTICE** !!! - Terms of service with Discord are not _straight forward_. This could potentially cause discord to warn/flag/suspend your account if you abuse the API interfaces.
+
 ### Setup
 
     # from within this directory

@@ -276,7 +276,7 @@ if __name__ == "__main__":
                     PROCESSED_REPLY_BUFFER.append(user)
                     replyFile.write(user + "\n")
 
-                time.sleep(random.randint(27,37))
+                time.sleep(random.randint(27,53))
         except KeyboardInterrupt:
             requestFile.close()
             replyFile.close()
