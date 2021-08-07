@@ -36,9 +36,8 @@ set these in your environment you're running the script from:
 * Linux - `export DISCORD_AUTHORIZATION=<authorization header data>`
 * Windows - `set DISCORD_AUTHORIZATION=<authorization header data>`
 
-
-    set DISCORD_AUTHORIZATION=abcd1234abcd1234abcd.12345.abcd1234abcd1234
-    set DISCORD_XSUPER=eby-some-long.string.of-text
+        set DISCORD_AUTHORIZATION=abcd1234abcd1234abcd.12345.abcd1234abcd1234
+        set DISCORD_XSUPER=eby-some-long.string.of-text
 
 ### Note your com/tty port for the USB Serial connection
 Grab your COM# or /dev/tty number for your badge (whatever you're using to connect via Putty, etc)
