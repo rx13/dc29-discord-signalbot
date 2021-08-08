@@ -132,7 +132,7 @@ def getReqs(messages):
         if message["author"]["username"] == DISCORD_USER:
             continue
         if messageReqRegex.search(message["content"]):
-            if "mentions" in message and len(message["mentions"]) > 0:
+            if "mentions" in message and len([mention for mention in message["mentions"] if mention["username"] != DISCORD_USER]) > 0:
                 continue
             match = messageReqRegex.search(message["content"])[0]
             reqKey = keyMatchRegex.search(match)[0]
