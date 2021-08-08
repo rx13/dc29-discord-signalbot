@@ -26,8 +26,11 @@ dc29SignalChatReq = f"{dc29SignalChat}?limit=50"
 dc29SignalChatReact = "{dc29SignalChat}/{messageID}/reactions/%F0%9F%91%8D/%40me"
 
 #NOTE: REPLACE THIS WITH YOUR USER
-DISCORD_USER = "rx13"
-BADGE_CHANNEL = "COM3" #/dev/tty# or COM#
+DISCORD_USER = os.environ.get("DISCORD_USER") # your username
+BADGE_CHANNEL = os.environ.get("BADGE_SERIAL_PORT") #/dev/tty# or COM#
+
+if not DISCORD_USER or not BADGE_CHANNEL:
+    raise("Env variables for DISCORD_USER or BADGE_SERIAL_PORT should be set")
 
 ########### 
 #
