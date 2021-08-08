@@ -133,7 +133,7 @@ def getLastMessageIndex(responseJson):
 
 
 def getReqs(messages):
-    lastReqID = 0
+    lastReqID = 1
     reqs = {}
     for message in messages:
         if message["author"]["username"] == DISCORD_USER:
