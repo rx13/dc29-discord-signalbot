@@ -27,7 +27,7 @@ dc29SignalChatReact = "{dc29SignalChat}/{messageID}/reactions/%F0%9F%91%8D/%40me
 
 postRequestsSometimes = False
 autoBackoffSlowChat = True
-backoffStart = 600 #seconds, 10 min
+backoffStart = 60 #seconds, 10 min
 backoffMax = 7200 #seconds, 1 hour
 backoffNow = backoffStart
 
