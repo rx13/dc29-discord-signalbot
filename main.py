@@ -151,6 +151,8 @@ def getReqs(messages):
                     "messageId": message["id"]
                 }
             lastReqID = message["id"]
+    if lastReqID == 1:
+        lastReqID = messages[-1]["id"]
     return reqs, lastReqID
 
 
@@ -325,6 +327,6 @@ if __name__ == "__main__":
                 if replies:
                     BADGE_REQ_TOKEN = badgeGetRequestToken()
 
-                time.sleep(random.randint(29,39))
+                time.sleep(random.randint(37,59))
         except KeyboardInterrupt:
             pass
