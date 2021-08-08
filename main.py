@@ -22,7 +22,7 @@ logger = logging.getLogger()
 
 #URL for 
 dc29SignalChat = 'https://discord.com/api/v9/channels/872838274610262086/messages'
-dc29SignalChatReq = f"{dc29SignalChat}?limit=100"
+dc29SignalChatReq = f"{dc29SignalChat}?limit=50"
 dc29SignalChatReact = "{dc29SignalChat}/{messageID}/reactions/%F0%9F%91%8D/%40me"
 
 #NOTE: REPLACE THIS WITH YOUR USER
