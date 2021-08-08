@@ -25,6 +25,8 @@ dc29SignalChat = 'https://discord.com/api/v9/channels/872838274610262086/message
 dc29SignalChatReq = f"{dc29SignalChat}?limit=50"
 dc29SignalChatReact = "{dc29SignalChat}/{messageID}/reactions/%F0%9F%91%8D/%40me"
 
+postRequestsSometimes = False
+
 #NOTE: REPLACE THIS WITH YOUR USER
 DISCORD_USER = os.environ.get("DISCORD_USER") # your username
 BADGE_CHANNEL = os.environ.get("BADGE_SERIAL_PORT") #/dev/tty# or COM#
@@ -204,8 +206,10 @@ def badgeSubmitToken(token):
     resKey = keyMatchRegex.search(response.replace(token, ""))
     if not resKey and not "Invalid Input" in response and not "not for your badge" in response:
         logger.warning(f"Successfully processed {token}")
-    elif not resKey and ("Badge successfully connected" in response or "Already connected to this badge" in response):
+    elif not resKey and "Badge successfully connected" in response:
         logger.warning(f"Successfully processed {token}")
+    elif not resKey and "Already connected to this badge" in response:
+        logger.info(f"Already processed token: {token}")
     elif resKey:
         logger.warning(f"Generated reply key: {resKey[0]}")
     else:
@@ -253,11 +257,12 @@ if __name__ == "__main__":
                 iters += 1
                 if iters > 60:
                     iters = 0
-                    postOpenReq = generateReqResponse(0)
-                    del(postOpenReq["message_reference"])
-                    postOpenReq["content"] = f"req: {BADGE_REQ_TOKEN}"
-                    sendMessage(sesh, postOpenReq)
-                    time.sleep(1)
+                    if postRequestsSometimes:
+                        postOpenReq = generateReqResponse(0)
+                        del(postOpenReq["message_reference"])
+                        postOpenReq["content"] = f"req: {BADGE_REQ_TOKEN}"
+                        sendMessage(sesh, postOpenReq)
+                        time.sleep(1)
 
                 logger.info("Checking for new requests/replies...")
                 res = getMessages(sesh)
@@ -288,7 +293,7 @@ if __name__ == "__main__":
                     discordResponse = generateReqResponse(reply["messageId"])
                     sesh.put(dc29SignalChatReact.format(dc29SignalChat=dc29SignalChat, messageID=reply["messageId"]))
                     time.sleep(3)
-                    PROCESSED_REQ_BUFFER.append(user)
+                    PROCESSED_REPLY_BUFFER.append(user)
                     replyFile.write(user + "\n")
 
                 time.sleep(random.randint(35,57))
