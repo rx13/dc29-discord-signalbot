@@ -214,7 +214,7 @@ def badgeGetRequestToken():
         logger.warning(f"failed to grab reqKey from '{response}', trying again")
         time.sleep(.325)
         reqKey = badgeGetRequestToken()
-    return reqKey[0]
+    return reqKey
 
 def badgeSubmitToken(token):
     response = sendBadgeCommand("5")
@@ -253,7 +253,7 @@ if __name__ == "__main__":
     getBadgeOutput()
     sendBadgeCommand("n\r\n") # send 'N' just in case someone is on reset screen
 
-    BADGE_REQ_TOKEN = badgeGetRequestToken()
+    BADGE_REQ_TOKEN = badgeGetRequestToken()[0]
     logger.warning(f"Using badge REQ TOKEN: {BADGE_REQ_TOKEN}")
 
     if "--interactive" in sys.argv:
@@ -325,7 +325,7 @@ if __name__ == "__main__":
                         replyFile.write(user + "\n")
 
                 if replies:
-                    BADGE_REQ_TOKEN = badgeGetRequestToken()
+                    BADGE_REQ_TOKEN = badgeGetRequestToken()[0]
 
                 time.sleep(random.randint(37,59))
         except KeyboardInterrupt:
