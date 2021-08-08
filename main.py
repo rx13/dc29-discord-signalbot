@@ -297,8 +297,8 @@ if __name__ == "__main__":
                         backoffNow = random.randint(backoffNow, backoffNow + backoffStart)
                         if backoffNow > backoffMax:
                             backoffNow = backoffMax
-                    logger.warning(f"Backing off for {backoffNow} seconds...")
-                    time.sleep(backoffNow)
+                        logger.warning(f"Backing off for {backoffNow} seconds...")
+                        time.sleep(backoffNow)
                 
                 for user,req in requests.items():
                     logger.info(f"Processing SIGNAL REQ from {user}")
