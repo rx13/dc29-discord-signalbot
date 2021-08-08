@@ -10,7 +10,7 @@ import time
 import logging
 logging.basicConfig(
     format="%(asctime)-15s %(levelname)-8s : %(message)s",
-    level=logging.INFO
+    level=logging.WARNING
 )
 logger = logging.getLogger()
 
@@ -134,6 +134,7 @@ def getReqs(messages):
             match = messageReqRegex.search(message["content"])[0]
             reqKey = keyMatchRegex.search(match)[0]
             user = message["author"]["username"]
+            user = user.encode('unicode-escape').decode('utf-8', "ignore")
             if reqKey != None and user not in PROCESSED_REQ_BUFFER:
                 reqs[user] = {
                     "token": reqKey,
@@ -156,6 +157,7 @@ def getReplies(messages):
                 replymatch = messageReplyRegex.search(message["content"])[0]
                 responseKey = keyMatchRegex.search(replymatch)[0]
                 user = message["author"]["username"]
+                user = user.encode('unicode-escape').decode('utf-8', "ignore")
                 if responseKey != None and user not in PROCESSED_REPLY_BUFFER:
                     replies[user] = {
                         "token": responseKey,
@@ -264,7 +266,6 @@ if __name__ == "__main__":
                     discordResponse["content"] = f"res: {replyToken[0]} \r\nREQ: {BADGE_REQ_TOKEN}"
                     sendMessage(sesh, discordResponse)
                     time.sleep(3)
-                    user = user.encode('unicode-escape').decode('utf-8', "ignore")
                     PROCESSED_REQ_BUFFER.append(user)
                     requestFile.write(user + "\n")
 
@@ -274,7 +275,6 @@ if __name__ == "__main__":
                     discordResponse = generateReqResponse(reply["messageId"])
                     sesh.put(dc29SignalChatReact.format(dc29SignalChat=dc29SignalChat, messageID=reply["messageId"]))
                     time.sleep(3)
-                    user = user.encode('unicode-escape').decode('utf-8', "ignore")
                     PROCESSED_REQ_BUFFER.append(user)
                     replyFile.write(user + "\n")
 
