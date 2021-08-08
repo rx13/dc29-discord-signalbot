@@ -66,7 +66,8 @@ if not discordXSuperProperties or not discordAuthorization:
 # assume prefix of syn/req
 messageReqRegex = re.compile("((req|syn|signal)[-.!: ]*[0-9a-zA-Z]{32}|^.*[^res]*[-: ]*[0-9a-zA-Z]{32}.*$)", re.IGNORECASE)
 # assume the initial key is a response to a request
-messageReplyRegex = re.compile("^((resp|res)[-: ]*)?[^a-zA-Z0-9]*[a-zA-Z0-9]{32}[^a-zA-Z0-9]*", re.IGNORECASE)
+messageReplyRegex = re.compile("((resp|res)[-: ]*)?[^a-zA-Z0-9]*[a-zA-Z0-9]{32}[^a-zA-Z0-9]*", re.IGNORECASE)
+messageReplyRegexStrict = re.compile("((resp|res)[-: ]*)[^a-zA-Z0-9]*[a-zA-Z0-9]{32}[^a-zA-Z0-9]*", re.IGNORECASE)
 # key extraction regex
 keyMatchRegex = re.compile("[a-zA-Z0-9]{32}")
 
@@ -157,17 +158,27 @@ def getReplies(messages):
         inMentions = False
         # we assume any reply with us as a mention is a REQ REPLY
         mentioned = [mention for mention in message["mentions"] if mention["username"] == DISCORD_USER]
+        user = message["author"]["username"]
+        user = user.encode('unicode-escape').decode('utf-8', "ignore")
         if mentioned:
             if messageReplyRegex.search(message["content"]):
                 replymatch = messageReplyRegex.search(message["content"])[0]
                 responseKey = keyMatchRegex.search(replymatch)[0]
-                user = message["author"]["username"]
-                user = user.encode('unicode-escape').decode('utf-8', "ignore")
                 if responseKey != None and user not in PROCESSED_REPLY_BUFFER:
                     replies[user] = {
                         "token": responseKey,
                         "messageId": message["id"]
                     }
+        else:
+            if user in PROCESSED_REQ_BUFFER and user not in PROCESSED_REPLY_BUFFER:
+                if messageReplyRegexStrict.search(message["content"]):
+                    replymatch = messageReplyRegexStrict.search(message["content"])[0]
+                    responseKey = keyMatchRegex.search(replymatch)[0]
+                    if responseKey != None and user not in PROCESSED_REPLY_BUFFER:
+                        replies[user] = {
+                            "token": responseKey,
+                            "messageId": message["id"]
+                        }
     return replies
 
 def getBadgeOutput(lastcmd=b""):
@@ -229,9 +240,6 @@ if __name__ == "__main__":
     sesh = requests.Session()
     sesh.headers = headers
 
-    requestFile = open("requests.txt", "a+")
-    replyFile = open("replies.txt", "a+")
-
     badge = serial.Serial(BADGE_CHANNEL)
     getBadgeOutput()
     sendBadgeCommand("n\r\n") # send 'N' just in case someone is on reset screen
@@ -285,7 +293,8 @@ if __name__ == "__main__":
                     sendMessage(sesh, discordResponse)
                     time.sleep(3)
                     PROCESSED_REQ_BUFFER.append(user)
-                    requestFile.write(user + "\n")
+                    with open("requests.txt", "a+") as requestFile:
+                        requestFile.write(user + "\n")
 
                 for user,reply in replies.items():
                     logger.info(f"Processing SIGNAL REPLY from {user}")
@@ -294,7 +303,8 @@ if __name__ == "__main__":
                     sesh.put(dc29SignalChatReact.format(dc29SignalChat=dc29SignalChat, messageID=reply["messageId"]))
                     time.sleep(3)
                     PROCESSED_REPLY_BUFFER.append(user)
-                    replyFile.write(user + "\n")
+                    with open("replies.txt", "a+") as replyFile:
+                        replyFile.write(user + "\n")
 
                 time.sleep(random.randint(35,57))
         except KeyboardInterrupt:
