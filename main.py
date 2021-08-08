@@ -221,16 +221,19 @@ def badgeSubmitToken(token):
     resKey = keyMatchRegex.search(response.replace(token, ""))
     if not resKey and not "Invalid Input" in response and not "not for your badge" in response:
         logger.warning(f"Successfully processed {token}")
+        return True
     elif not resKey and "Badge successfully connected" in response:
         logger.warning(f"Successfully processed {token}")
+        return True
     elif not resKey and "Already connected to this badge" in response:
         logger.info(f"Already processed token: {token}")
+        return False
     elif resKey:
         logger.warning(f"Generated reply key: {resKey[0]}")
     else:
         if "not for your badge" in response:
             logger.info("Not a request token")
-            return None
+            return False
         logger.error(f"Request failed for token: {token} -- {response}")
     return resKey
 
@@ -312,7 +315,8 @@ if __name__ == "__main__":
                     logger.info(f"Processing SIGNAL REPLY from {user}")
                     replyToken = badgeSubmitToken(reply["token"])
                     discordResponse = generateReqResponse(reply["messageId"])
-                    sesh.put(dc29SignalChatReact.format(dc29SignalChat=dc29SignalChat, messageID=reply["messageId"]))
+                    if replyToken:
+                        sesh.put(dc29SignalChatReact.format(dc29SignalChat=dc29SignalChat, messageID=reply["messageId"]))
                     time.sleep(3)
                     PROCESSED_REPLY_BUFFER.append(user)
                     with open("replies.txt", "a+") as replyFile:
