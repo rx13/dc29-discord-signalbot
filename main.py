@@ -27,7 +27,7 @@ dc29SignalChatReact = "{dc29SignalChat}/{messageID}/reactions/%F0%9F%91%8D/%40me
 
 postRequestsSometimes = False
 autoBackoffSlowChat = True
-backoffStart = 60 #seconds, 10 min
+backoffStart = 30 #seconds, 10 min
 backoffMax = 7200 #seconds, 1 hour
 backoffNow = backoffStart
 
@@ -325,6 +325,6 @@ if __name__ == "__main__":
                 if replies:
                     BADGE_REQ_TOKEN = badgeGetRequestToken()
 
-                time.sleep(random.randint(35,57))
+                time.sleep(random.randint(29,39))
         except KeyboardInterrupt:
             pass
