@@ -204,7 +204,7 @@ def badgeSubmitToken(token):
     resKey = keyMatchRegex.search(response.replace(token, ""))
     if not resKey and not "Invalid Input" in response and not "not for your badge" in response:
         logger.warning(f"Successfully processed {token}")
-    elif not resKey and "Badge successfully connected" in response:
+    elif not resKey and ("Badge successfully connected" in response or "Already connected to this badge" in response):
         logger.warning(f"Successfully processed {token}")
     elif resKey:
         logger.warning(f"Generated reply key: {resKey[0]}")
