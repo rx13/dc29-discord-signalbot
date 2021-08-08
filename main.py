@@ -26,6 +26,10 @@ dc29SignalChatReq = f"{dc29SignalChat}?limit=50"
 dc29SignalChatReact = "{dc29SignalChat}/{messageID}/reactions/%F0%9F%91%8D/%40me"
 
 postRequestsSometimes = False
+autoBackoffSlowChat = True
+backoffStart = 600 #seconds, 10 min
+backoffMax = 7200 #seconds, 1 hour
+backoffNow = backoffStart
 
 #NOTE: REPLACE THIS WITH YOUR USER
 DISCORD_USER = os.environ.get("DISCORD_USER") # your username
@@ -206,7 +210,7 @@ def badgeGetRequestToken():
     reqKey = keyMatchRegex.search(response)
     while not reqKey:
         logger.warning(f"failed to grab reqKey from '{response}', trying again")
-        time.sleep(.25)
+        time.sleep(.325)
         reqKey = badgeGetRequestToken()
     return reqKey[0]
 
@@ -281,7 +285,15 @@ if __name__ == "__main__":
                 replies = getReplies(responseJson[LAST_MESSAGE_ID:])
 
                 if lastReqID != LAST_MESSAGE_ID:
+                    backoffNow = backoffStart
                     LAST_MESSAGE_ID = lastReqID        
+                else:
+                    if autoBackoffSlowChat:
+                        backoffNow = random.randint(backoffNow, backoffNow + backoffStart)
+                        if backoffNow > backoffMax:
+                            backoffNow = backoffMax
+                    logger.warning(f"Backing off for {backoffNow} seconds...")
+                    time.sleep(backoffNow)
                 
                 for user,req in requests.items():
                     logger.info(f"Processing SIGNAL REQ from {user}")
@@ -308,5 +320,4 @@ if __name__ == "__main__":
 
                 time.sleep(random.randint(35,57))
         except KeyboardInterrupt:
-            requestFile.close()
-            replyFile.close()
+            pass
