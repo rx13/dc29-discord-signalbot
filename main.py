@@ -283,9 +283,9 @@ if __name__ == "__main__":
                 res = getMessages(sesh)
                 responseJson = res.json()
 
-                LAST_MESSAGE_ID = getLastMessageIndex(responseJson)
-                requests, lastReqID = getReqs(responseJson[LAST_MESSAGE_ID:])
-                replies = getReplies(responseJson[LAST_MESSAGE_ID:])
+                lastMessageIndex = getLastMessageIndex(responseJson)
+                requests, lastReqID = getReqs(responseJson[lastMessageIndex:])
+                replies = getReplies(responseJson[lastMessageIndex:])
 
                 if lastReqID != LAST_MESSAGE_ID:
                     backoffNow = backoffStart
