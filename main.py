@@ -10,7 +10,7 @@ import time
 import logging
 logging.basicConfig(
     format="%(asctime)-15s %(levelname)-8s : %(message)s",
-    level=logging.INFO
+    level=logging.WARNING
 )
 logger = logging.getLogger()
 
@@ -22,7 +22,7 @@ logger = logging.getLogger()
 
 #URL for 
 dc29SignalChat = 'https://discord.com/api/v9/channels/872838274610262086/messages'
-dc29SignalChatReq = f"{dc29SignalChat}?limit=50"
+dc29SignalChatReq = f"{dc29SignalChat}?limit=100"
 dc29SignalChatReact = "{dc29SignalChat}/{messageID}/reactions/%F0%9F%91%8D/%40me"
 
 #NOTE: REPLACE THIS WITH YOUR USER
@@ -264,6 +264,7 @@ if __name__ == "__main__":
                     discordResponse["content"] = f"res: {replyToken[0]} \r\nREQ: {BADGE_REQ_TOKEN}"
                     sendMessage(sesh, discordResponse)
                     time.sleep(3)
+                    user = user.encode('unicode-escape').decode('utf-8', "ignore")
                     PROCESSED_REQ_BUFFER.append(user)
                     requestFile.write(user + "\n")
 
@@ -273,10 +274,11 @@ if __name__ == "__main__":
                     discordResponse = generateReqResponse(reply["messageId"])
                     sesh.put(dc29SignalChatReact.format(dc29SignalChat=dc29SignalChat, messageID=reply["messageId"]))
                     time.sleep(3)
-                    PROCESSED_REPLY_BUFFER.append(user)
+                    user = user.encode('unicode-escape').decode('utf-8', "ignore")
+                    PROCESSED_REQ_BUFFER.append(user)
                     replyFile.write(user + "\n")
 
-                time.sleep(random.randint(27,53))
+                time.sleep(random.randint(35,57))
         except KeyboardInterrupt:
             requestFile.close()
             replyFile.close()
