@@ -38,6 +38,8 @@ set these in your environment you're running the script from:
 
         set DISCORD_AUTHORIZATION=abcd1234abcd1234abcd.12345.abcd1234abcd1234
         set DISCORD_XSUPER=eby-some-long.string.of-text
+        set DISCORD_USER=yourUserName
+        set BADGE_SERIAL_PORT=yourSerialPortCom3Tty
 
 ### Note your com/tty port for the USB Serial connection
 Grab your COM# or /dev/tty number for your badge (whatever you're using to connect via Putty, etc)
