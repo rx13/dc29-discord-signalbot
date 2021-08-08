@@ -68,10 +68,10 @@ if not discordXSuperProperties or not discordAuthorization:
     raise Exception("Must include environment variables with client auth")
 
 # assume prefix of syn/req
-messageReqRegex = re.compile("((req|syn|signal)[-.!: ]*[0-9a-zA-Z]{32}|^.*[^res]*[-: ]*[0-9a-zA-Z]{32}.*$)", re.IGNORECASE)
+messageReqRegex = re.compile("((req|syn|sig(nal)?)[-.!: ]*[0-9a-zA-Z]{32}|^.*[^res]*[-: ]*[0-9a-zA-Z]{32}.*$)", re.IGNORECASE)
 # assume the initial key is a response to a request
-messageReplyRegex = re.compile("((resp|res)[-: ]*)?[^a-zA-Z0-9]*[a-zA-Z0-9]{32}[^a-zA-Z0-9]*", re.IGNORECASE)
-messageReplyRegexStrict = re.compile("((resp|res)[-: ]*)[^a-zA-Z0-9]*[a-zA-Z0-9]{32}[^a-zA-Z0-9]*", re.IGNORECASE)
+messageReplyRegex = re.compile("((res[p]?|synack|ack)[-: ]*)?[^a-zA-Z0-9]*[a-zA-Z0-9]{32}[^a-zA-Z0-9]*", re.IGNORECASE)
+messageReplyRegexStrict = re.compile("((res[p]?|synack|ack)[-: ]*)[^a-zA-Z0-9]*[a-zA-Z0-9]{32}[^a-zA-Z0-9]*", re.IGNORECASE)
 # key extraction regex
 keyMatchRegex = re.compile("[a-zA-Z0-9]{32}")
 
