@@ -31,6 +31,10 @@ You need TWO headers:
 
 These will be set as DISCORD_AUTHORIZATION and DISCORD_XSUPER in your environment respectively.
 
+### Note your com/tty port for the USB Serial connection
+Grab your COM# or /dev/tty number for your badge (whatever you're using to connect via Putty, etc)
+* example: COM2 or /dev/tty2 or /dev/serial0 (etc)
+
 ### Set environment variables
 set these in your environment you're running the script from:
 * Linux - `export DISCORD_AUTHORIZATION=<authorization header data>`
@@ -38,13 +42,10 @@ set these in your environment you're running the script from:
 
         set DISCORD_AUTHORIZATION=abcd1234abcd1234abcd.12345.abcd1234abcd1234
         set DISCORD_XSUPER=eby-some-long.string.of-text
-        set DISCORD_USER=yourUserName
+        set DISCORD_USER=yourUserNameWITHOUT#Suffix
         set BADGE_SERIAL_PORT=yourSerialPortCom3Tty
 
-### Note your com/tty port for the USB Serial connection
-Grab your COM# or /dev/tty number for your badge (whatever you're using to connect via Putty, etc)
-* example: COM2 or /dev/tty2 or /dev/serial0 (etc)
-
+---
 ## Usage
 
 Now you're ready to install the required packages.
