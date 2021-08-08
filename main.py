@@ -251,7 +251,7 @@ if __name__ == "__main__":
             iters = 0
             while True:
                 iters += 1
-                if iters > 12:
+                if iters > 60:
                     iters = 0
                     postOpenReq = generateReqResponse(0)
                     del(postOpenReq["message_reference"])
