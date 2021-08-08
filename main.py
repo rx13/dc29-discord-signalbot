@@ -318,6 +318,9 @@ if __name__ == "__main__":
                     with open("replies.txt", "a+") as replyFile:
                         replyFile.write(user + "\n")
 
+                if replies:
+                    BADGE_REQ_TOKEN = badgeGetRequestToken()
+
                 time.sleep(random.randint(35,57))
         except KeyboardInterrupt:
             pass
