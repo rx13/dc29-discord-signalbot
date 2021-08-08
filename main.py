@@ -248,7 +248,17 @@ if __name__ == "__main__":
             badge.close()
     else:
         try:
+            iters = 0
             while True:
+                iters += 1
+                if iters > 12:
+                    iters = 0
+                    postOpenReq = generateReqResponse(0)
+                    del(postOpenReq["message_reference"])
+                    postOpenReq["content"] = f"req: {BADGE_REQ_TOKEN}"
+                    sendMessage(sesh, postOpenReq)
+                    time.sleep(1)
+
                 logger.info("Checking for new requests/replies...")
                 res = getMessages(sesh)
                 responseJson = res.json()
