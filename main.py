@@ -329,7 +329,7 @@ if __name__ == "__main__":
                 # check for status requests
                 sendStatusMessage = False
                 lastStatusMessage = str(LAST_STAT_MESSAGE)
-                for message in responseJson:
+                for message in reversed(responseJson):
                     if message["author"]["username"] == DISCORD_USER:
                         if "!stats" in message["content"]:
                             sendStatusMessage = True
