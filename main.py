@@ -303,7 +303,7 @@ if __name__ == "__main__":
                 for user,req in requests.items():
                     logger.info(f"Processing SIGNAL REQ from {user}")
                     replyToken = badgeSubmitToken(req["token"])
-                    if not replyToken:    
+                    if not replyToken or isinstance(replyToken, bool):
                         continue
                     discordResponse = generateReqResponse(req["messageId"])
                     discordResponse["content"] = f"res: {replyToken[0]} \r\nREQ: {BADGE_REQ_TOKEN}"
