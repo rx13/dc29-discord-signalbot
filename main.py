@@ -1,4 +1,5 @@
 import copy
+import json
 import os
 import random
 import re
@@ -245,6 +246,45 @@ def generateReqResponse(messageId):
     response["message_reference"]["message_id"] = messageId
     return response
 
+
+def sendStatus(sesh):
+    statusMessage = """
+***Challenge Status***
+Number of Badges Connected: {collectedTotal}
+Badge Types Collected: {collectedTypes}
+Times You've Shared the Signal: {sharedTotal}"""
+
+    try:
+        badge.write(b"3")
+        badge.flushOutput()
+        rawStatus = sendBadgeCommand("n")
+        collectedTotal = re.search("Number of Badges Connected:[^0-9]*([0-9]+)", rawStatus)
+        collectedTypes = re.search(u"Badge Types Collected:[^a-zA-Z0-9]*([^\r\n$]+)", rawStatus)
+        sharedTotal = re.search("Times You've Shared the Signal:[^0-9]*([0-9]+)", rawStatus)
+        if not collectedTotal:
+            collectedTotal = 0
+        else:
+            collectedTotal = collectedTotal[1].replace('\x00', '').encode('ascii', "ignore").decode()
+        if not collectedTypes:
+            collectedTypes = "None"
+        else:
+            collectedTypes = collectedTypes[1].replace('\x00', '').encode('ascii', "ignore").decode()
+        if not sharedTotal:
+            sharedTotal = 0
+        else:
+            sharedTotal = sharedTotal[1].replace('\x00', '').encode('ascii', "ignore").decode()
+        payload = generateReqResponse(0)
+        del(payload["message_reference"])
+        payload["content"] = statusMessage.format(
+            collectedTotal=collectedTotal,
+            collectedTypes=collectedTypes,
+            sharedTotal=sharedTotal,
+        )
+        sendMessage(sesh, payload)
+    except Exception as e:
+        logger.error("Unable to send status to discord: {}".format(e))
+
+
 if __name__ == "__main__":
     sesh = requests.Session()
     sesh.headers = headers
@@ -254,6 +294,7 @@ if __name__ == "__main__":
     sendBadgeCommand("n\r\n") # send 'N' just in case someone is on reset screen
 
     BADGE_REQ_TOKEN = badgeGetRequestToken()[0]
+    LAST_STAT_MESSAGE = 0
     logger.warning(f"Using badge REQ TOKEN: {BADGE_REQ_TOKEN}")
 
     if "--interactive" in sys.argv:
@@ -285,13 +326,27 @@ if __name__ == "__main__":
                 res = getMessages(sesh)
                 responseJson = res.json()
 
+                # check for status requests
+                sendStatusMessage = False
+                lastStatusMessage = str(LAST_STAT_MESSAGE)
+                for message in responseJson:
+                    if message["author"]["username"] == DISCORD_USER:
+                        if "!stats" in message["content"]:
+                            sendStatusMessage = True
+                            lastStatusMessage = str(message["id"])
+
+                if sendStatusMessage and lastStatusMessage != LAST_STAT_MESSAGE:
+                    #if LAST_STAT_MESSAGE != 0:
+                    sendStatus(sesh)
+                    LAST_STAT_MESSAGE = str(lastStatusMessage)
+
                 lastMessageIndex = getLastMessageIndex(responseJson)
                 requests, lastReqID = getReqs(responseJson[lastMessageIndex:])
                 replies = getReplies(responseJson[lastMessageIndex:])
 
                 if lastReqID != LAST_MESSAGE_ID:
                     backoffNow = backoffStart
-                    LAST_MESSAGE_ID = lastReqID        
+                    LAST_MESSAGE_ID = lastReqID
                 else:
                     if autoBackoffSlowChat:
                         backoffNow = random.randint(backoffNow, backoffNow + backoffStart)
@@ -316,7 +371,6 @@ if __name__ == "__main__":
                 for user,reply in replies.items():
                     logger.info(f"Processing SIGNAL REPLY from {user}")
                     replyToken = badgeSubmitToken(reply["token"])
-                    discordResponse = generateReqResponse(reply["messageId"])
                     if replyToken:
                         sesh.put(dc29SignalChatReact.format(dc29SignalChat=dc29SignalChat, messageID=reply["messageId"]))
                     time.sleep(3)
