@@ -324,7 +324,7 @@ if __name__ == "__main__":
 
                 logger.info("Checking for new requests/replies...")
                 res = getMessages(sesh)
-                responseJson = reversed(res.json())
+                responseJson = list(reversed(res.json()))
 
                 # check for status requests
                 sendStatusMessage = False
