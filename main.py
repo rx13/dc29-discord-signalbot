@@ -324,12 +324,12 @@ if __name__ == "__main__":
 
                 logger.info("Checking for new requests/replies...")
                 res = getMessages(sesh)
-                responseJson = res.json()
+                responseJson = reversed(res.json())
 
                 # check for status requests
                 sendStatusMessage = False
                 lastStatusMessage = str(LAST_STAT_MESSAGE)
-                for message in reversed(responseJson):
+                for message in responseJson:
                     if message["author"]["username"] == DISCORD_USER:
                         if "!stats" in message["content"]:
                             sendStatusMessage = True
@@ -343,17 +343,6 @@ if __name__ == "__main__":
                 lastMessageIndex = getLastMessageIndex(responseJson)
                 requests, lastReqID = getReqs(responseJson[lastMessageIndex:])
                 replies = getReplies(responseJson[lastMessageIndex:])
-
-                if lastReqID != LAST_MESSAGE_ID:
-                    backoffNow = backoffStart
-                    LAST_MESSAGE_ID = lastReqID
-                else:
-                    if autoBackoffSlowChat:
-                        backoffNow = random.randint(backoffNow, backoffNow + backoffStart)
-                        if backoffNow > backoffMax:
-                            backoffNow = backoffMax
-                        logger.warning(f"Backing off for {backoffNow} seconds...")
-                        time.sleep(backoffNow)
                 
                 for user,req in requests.items():
                     logger.info(f"Processing SIGNAL REQ from {user}")
@@ -377,6 +366,17 @@ if __name__ == "__main__":
                     PROCESSED_REPLY_BUFFER.append(user)
                     with open("replies.txt", "a+") as replyFile:
                         replyFile.write(user + "\n")
+
+                if lastReqID != LAST_MESSAGE_ID:
+                    backoffNow = backoffStart
+                    LAST_MESSAGE_ID = lastReqID
+                else:
+                    if autoBackoffSlowChat:
+                        backoffNow = random.randint(backoffNow, backoffNow + backoffStart)
+                        if backoffNow > backoffMax:
+                            backoffNow = backoffMax
+                        logger.warning(f"Backing off for {backoffNow} seconds...")
+                        time.sleep(backoffNow)
 
                 if replies:
                     BADGE_REQ_TOKEN = badgeGetRequestToken()[0]
