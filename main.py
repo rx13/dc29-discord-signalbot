@@ -256,6 +256,7 @@ Times You've Shared the Signal: {sharedTotal}"""
 
     try:
         badge.write(b"3")
+        badge.flush()
         badge.flushOutput()
         rawStatus = sendBadgeCommand("n")
         collectedTotal = re.search("Number of Badges Connected:[^0-9]*([0-9]+)", rawStatus)
