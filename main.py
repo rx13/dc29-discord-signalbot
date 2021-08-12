@@ -69,10 +69,10 @@ if not discordXSuperProperties or not discordAuthorization:
     raise Exception("Must include environment variables with client auth")
 
 # assume prefix of syn/req
-messageReqRegex = re.compile("((req|syn|sig(nal)?)[-.!: ]*[0-9a-zA-Z]{32}|^.*[^res]*[-: ]*[0-9a-zA-Z]{32}.*$)", re.IGNORECASE)
+messageReqRegex = re.compile("(req|syn|sig|signal)[^a-zA-Z0-9]*[0-9a-zA-Z]{32}", re.IGNORECASE)
 # assume the initial key is a response to a request
-messageReplyRegex = re.compile("((res(p)?|(syn)?ack)[-: ]*)?[^a-zA-Z0-9]*[a-zA-Z0-9]{32}[^a-zA-Z0-9]*", re.IGNORECASE)
-messageReplyRegexStrict = re.compile("((res(p)?|(syn)?ack)[-: ]*)[^a-zA-Z0-9]*[a-zA-Z0-9]{32}[^a-zA-Z0-9]*", re.IGNORECASE)
+messageReplyRegex = re.compile("((res|resp|syn|synack|ack)[-: ]*)*[^a-zA-Z0-9]*[a-zA-Z0-9]{32}[^a-zA-Z0-9]*", re.IGNORECASE)
+messageReplyRegexStrict = re.compile("((res|resp|syn|synack|ack)[-: ]*)[^a-zA-Z0-9]*[a-zA-Z0-9]{32}[^a-zA-Z0-9]*", re.IGNORECASE)
 # key extraction regex
 keyMatchRegex = re.compile("[a-zA-Z0-9]{32}")
 
@@ -141,7 +141,8 @@ def getReqs(messages):
             continue
         if messageReqRegex.search(message["content"]):
             if "mentions" in message and len([mention for mention in message["mentions"] if mention["username"] != DISCORD_USER]) > 0:
-                continue
+                if not messageReqRegex.search(message["content"]):
+                    continue
             match = messageReqRegex.search(message["content"])[0]
             reqKey = keyMatchRegex.search(match)[0]
             user = message["author"]["username"]
