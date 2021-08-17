@@ -7,6 +7,7 @@ import requests
 import serial
 import sys
 import time
+import urllib3
 
 import logging
 logging.basicConfig(
@@ -106,21 +107,31 @@ jsonReqReply = {
     }
 
 def getMessages(sesh):
-    res = sesh.get(dc29SignalChatReq)
-    if res.ok:
-        return res
-    else:
-        logger.fatal(res.text)
-        raise Exception("Failed to auth, update XSuper and Authorization and try again")
+    try:
+        res = sesh.get(dc29SignalChatReq)
+        if res.ok:
+            return res
+        else:
+            logger.fatal(res.text)
+            raise Exception("Failed to auth, update XSuper and Authorization and try again")
+    except urllib3.exceptions.ProtocolError:
+        logger.warning("Connection error talking to Discord, waiting 15 seconds to retry")
+        time.sleep(15)
+        return getMessages(sesh)
 
 
 def sendMessage(sesh, payload):
-    res = sesh.post(dc29SignalChat, json=payload)
-    if res.ok:
-        return True
-    else:
-        logger.fatal(res.text)
-        raise Exception("Failed to auth, update XSuper and Authorization and try again")
+    try:
+        res = sesh.post(dc29SignalChat, json=payload)
+        if res.ok:
+            return True
+        else:
+            logger.fatal(res.text)
+            raise Exception("Failed to auth, update XSuper and Authorization and try again")
+    except urllib3.exceptions.ProtocolError:
+        logger.warning("Connection error talking to Discord, waiting 15 seconds to retry")
+        time.sleep(15)
+        return sendMessage(sesh, payload)
 
 
 def getLastMessageIndex(responseJson):
@@ -363,7 +374,11 @@ if __name__ == "__main__":
                     logger.info(f"Processing SIGNAL REPLY from {user}")
                     replyToken = badgeSubmitToken(reply["token"])
                     if replyToken == True:
-                        sesh.put(dc29SignalChatReact.format(dc29SignalChat=dc29SignalChat, messageID=reply["messageId"]))
+                        try:
+                            sesh.put(dc29SignalChatReact.format(dc29SignalChat=dc29SignalChat, messageID=reply["messageId"]))
+                        except urllib3.exceptions.ProtocolError:
+                            logger.warning("Connection error talking to Discord, waiting 15 seconds before continuing")
+                            time.sleep(15)
                     time.sleep(3)
                     PROCESSED_REPLY_BUFFER.append(user)
                     with open("replies.txt", "a+") as replyFile:
