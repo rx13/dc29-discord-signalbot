@@ -211,6 +211,7 @@ def getBadgeOutput(lastcmd=b""):
         if line == b"":
             if lastcmd.strip() == b"":
                 break
+    logger.debug(output.decode())
     return output.decode('utf-8')
 
 def sendBadgeCommand(cmd):
@@ -267,7 +268,7 @@ Badge Types Collected: {collectedTypes}
 Times You've Shared the Signal: {sharedTotal}"""
 
     try:
-        badge.write(b"3")
+        badge.write(b"3") #send without newline, interacive mode
         badge.flush()
         badge.flushOutput()
         rawStatus = sendBadgeCommand("n")
@@ -309,6 +310,9 @@ if __name__ == "__main__":
     BADGE_REQ_TOKEN = badgeGetRequestToken()[0]
     LAST_STAT_MESSAGE = 0
     logger.warning(f"Using badge REQ TOKEN: {BADGE_REQ_TOKEN}")
+
+    if "--log-level" in sys.argv:
+        logger.setLevel(sys.argv[sys.argv.index("--log-level")+1].upper())
 
     if "--interactive" in sys.argv:
         try:
