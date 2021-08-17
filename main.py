@@ -310,6 +310,9 @@ if __name__ == "__main__":
     LAST_STAT_MESSAGE = 0
     logger.warning(f"Using badge REQ TOKEN: {BADGE_REQ_TOKEN}")
 
+    if "--log-level" in sys.argv:
+        logger.setLevel(sys.argv[sys.argv.index("--log-level")+1])
+
     if "--interactive" in sys.argv:
         try:
             while True:
