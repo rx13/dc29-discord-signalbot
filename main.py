@@ -211,7 +211,7 @@ def getBadgeOutput(lastcmd=b""):
         if line == b"":
             if lastcmd.strip() == b"":
                 break
-    logger.debug(output.decode())
+    logger.debug(output.decode().encode('unicode-escape'))
     return output.decode('utf-8')
 
 def sendBadgeCommand(cmd):
@@ -271,22 +271,22 @@ Times You've Shared the Signal: {sharedTotal}"""
         badge.write(b"3") #send without newline, interacive mode
         badge.flush()
         badge.flushOutput()
-        rawStatus = sendBadgeCommand("n")
-        collectedTotal = re.search("Number of Badges Connected:[^0-9]*([0-9]+)", rawStatus)
-        collectedTypes = re.search(u"Badge Types Collected:[^a-zA-Z0-9]*([^\r\n$]+)", rawStatus)
-        sharedTotal = re.search("Times You've Shared the Signal:[^0-9]*([0-9]+)", rawStatus)
+        rawStatus = sendBadgeCommand("n").replace('\x00', '')
+        collectedTotal = re.search("Number[\W]+of[\W]+Badges[\W]+Connected:[\W]*([0-9]+)", rawStatus)
+        collectedTypes = re.search(u"Badge[\W]+Types[\W]+Collected:[\W]*([^\r\n$]+)", rawStatus)
+        sharedTotal = re.search("Times[\W]+You've[\W]+Shared[\W]+the[\W]+Signal:[\W]*([0-9]+)", rawStatus)
         if not collectedTotal:
             collectedTotal = 0
         else:
-            collectedTotal = collectedTotal[1].replace('\x00', '').encode('ascii', "ignore").decode()
+            collectedTotal = collectedTotal[1].encode('ascii', "ignore").decode()
         if not collectedTypes:
             collectedTypes = "None"
         else:
-            collectedTypes = collectedTypes[1].replace('\x00', '').encode('ascii', "ignore").decode()
+            collectedTypes = collectedTypes[1].encode('ascii', "ignore").decode()
         if not sharedTotal:
             sharedTotal = 0
         else:
-            sharedTotal = sharedTotal[1].replace('\x00', '').encode('ascii', "ignore").decode()
+            sharedTotal = sharedTotal[1].encode('ascii', "ignore").decode()
         payload = generateReqResponse(0)
         del(payload["message_reference"])
         payload["content"] = statusMessage.format(
