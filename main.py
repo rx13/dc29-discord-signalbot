@@ -28,6 +28,7 @@ dc29SignalChatReq = f"{dc29SignalChat}?limit=50"
 dc29SignalChatReact = "{dc29SignalChat}/{messageID}/reactions/%F0%9F%91%8D/%40me"
 
 postRequestsSometimes = False
+logBadgeStatusInterval = 10 # 0=disable, any other number=log badge status every 5 loops
 autoBackoffSlowChat = True
 backoffStart = 30 #seconds, 10 min
 backoffMax = 7200 #seconds, 1 hour
@@ -204,7 +205,7 @@ def getBadgeOutput(lastcmd=b""):
     output = b""
     line = badge.read_all()
     output += line
-    time.sleep(0.35)
+    time.sleep(0.20)
     while not line.endswith(b"\x00") or badge.out_waiting > 0:
         line = badge.read_all()
         output += line
@@ -260,7 +261,7 @@ def generateReqResponse(messageId):
     return response
 
 
-def sendStatus(sesh):
+def sendStatus(sesh, local=False):
     statusMessage = """
 ***Challenge Status***
 Number of Badges Connected: {collectedTotal}
@@ -268,10 +269,8 @@ Badge Types Collected: {collectedTypes}
 Times You've Shared the Signal: {sharedTotal}"""
 
     try:
-        badge.write(b"3") #send without newline, interacive mode
-        badge.flush()
-        badge.flushOutput()
-        rawStatus = sendBadgeCommand("n\r\nn\r\n")
+        sendBadgeCommand("3")
+        rawStatus = sendBadgeCommand("n")
         rawStatus = rawStatus.replace('\x00', '')
         collectedTotal = re.search("Number[\W]+of[\W]+Badges[\W]+Connected:[\W]*([0-9]+)", rawStatus)
         collectedTypes = re.search(u"Badge[\W]+Types[\W]+Collected:[\W]*([^\r\n$]+)", rawStatus)
@@ -295,8 +294,8 @@ Times You've Shared the Signal: {sharedTotal}"""
             collectedTypes=collectedTypes,
             sharedTotal=sharedTotal,
         )
-        if logger.level == logging.DEBUG:
-            logger.debug(payload)
+        if local or logger.level == logging.DEBUG:
+            logger.warning(rawStatus)
         else:
             sendMessage(sesh, payload)
     except Exception as e:
@@ -333,6 +332,9 @@ if __name__ == "__main__":
         try:
             iters = 0
             while True:
+                if logBadgeStatusInterval != 0:
+                    if iters % logBadgeStatusInterval == 0:
+                        sendStatus(sesh, True)
                 iters += 1
                 if iters > 60:
                     iters = 0
