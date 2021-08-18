@@ -72,5 +72,8 @@ You will need to edit `main.py`.
     # for testing/etc
     python3 main.py --interactive
 
+    # run with additional logging
+    python3 main.py --log-level debug
+
     # to run live
     python3 main.py
