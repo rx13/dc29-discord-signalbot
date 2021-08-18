@@ -204,7 +204,7 @@ def getBadgeOutput(lastcmd=b""):
     output = b""
     line = badge.read_all()
     output += line
-    time.sleep(0.25)
+    time.sleep(0.35)
     while not line.endswith(b"\x00") or badge.out_waiting > 0:
         line = badge.read_all()
         output += line
@@ -271,7 +271,8 @@ Times You've Shared the Signal: {sharedTotal}"""
         badge.write(b"3") #send without newline, interacive mode
         badge.flush()
         badge.flushOutput()
-        rawStatus = sendBadgeCommand("n").replace('\x00', '')
+        rawStatus = sendBadgeCommand("n\r\nn\r\n")
+        rawStatus = rawStatus.replace('\x00', '')
         collectedTotal = re.search("Number[\W]+of[\W]+Badges[\W]+Connected:[\W]*([0-9]+)", rawStatus)
         collectedTypes = re.search(u"Badge[\W]+Types[\W]+Collected:[\W]*([^\r\n$]+)", rawStatus)
         sharedTotal = re.search("Times[\W]+You've[\W]+Shared[\W]+the[\W]+Signal:[\W]*([0-9]+)", rawStatus)
@@ -294,7 +295,10 @@ Times You've Shared the Signal: {sharedTotal}"""
             collectedTypes=collectedTypes,
             sharedTotal=sharedTotal,
         )
-        sendMessage(sesh, payload)
+        if logger.level == logging.DEBUG:
+            logger.debug(payload)
+        else:
+            sendMessage(sesh, payload)
     except Exception as e:
         logger.error("Unable to send status to discord: {}".format(e))
 
