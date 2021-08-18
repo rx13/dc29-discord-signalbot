@@ -294,8 +294,10 @@ Times You've Shared the Signal: {sharedTotal}"""
             collectedTypes=collectedTypes,
             sharedTotal=sharedTotal,
         )
-        if local or logger.level == logging.DEBUG:
-            logger.warning(rawStatus)
+        if local:
+            logger.warning(f"Badges connected: {collectedTotal}  Signal shared: {sharedTotal}")
+        elif logger.level == logging.DEBUG:
+            logger.debug(rawStatus)
         else:
             sendMessage(sesh, payload)
     except Exception as e:
