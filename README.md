@@ -1,6 +1,7 @@
 # dc29-discord-signalbot
 A python discord client interaction emulator for the DC29 badge code channel
 
+Special thanks to DC29 Discord `@Reiuiji#8888` and `@kujo#8154` for feedback and testing.
 ## Prep
 
 ### Open Developer mode    
