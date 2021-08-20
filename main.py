@@ -185,20 +185,28 @@ def getReplies(messages):
                 replymatch = messageReplyRegex.search(message["content"])[0]
                 responseKey = keyMatchRegex.search(replymatch)[0]
                 if responseKey != None and user not in PROCESSED_REPLY_BUFFER:
-                    replies[user] = {
+                    messageContext = {
                         "token": responseKey,
                         "messageId": message["id"]
                     }
+                    if user not in replies:
+                        replies[user] = [messageContext]
+                    else:
+                        replies[user].append(messageContext)
         else:
             if user in PROCESSED_REQ_BUFFER and user not in PROCESSED_REPLY_BUFFER:
                 if messageReplyRegexStrict.search(message["content"]):
                     replymatch = messageReplyRegexStrict.search(message["content"])[0]
                     responseKey = keyMatchRegex.search(replymatch)[0]
                     if responseKey != None and user not in PROCESSED_REPLY_BUFFER:
-                        replies[user] = {
+                        messageContext = {
                             "token": responseKey,
                             "messageId": message["id"]
                         }
+                        if user not in replies:
+                            replies[user] = [messageContext]
+                        else:
+                            replies[user].append(messageContext)
     return replies
 
 def getBadgeOutput(lastcmd=b""):
@@ -382,19 +390,20 @@ if __name__ == "__main__":
                     with open("requests.txt", "a+") as requestFile:
                         requestFile.write(user + "\n")
 
-                for user,reply in replies.items():
-                    logger.info(f"Processing SIGNAL REPLY from {user}")
-                    replyToken = badgeSubmitToken(reply["token"])
-                    if replyToken == True:
-                        try:
-                            sesh.put(dc29SignalChatReact.format(dc29SignalChat=dc29SignalChat, messageID=reply["messageId"]))
-                        except urllib3.exceptions.ProtocolError:
-                            logger.warning("Connection error talking to Discord, waiting 15 seconds before continuing")
-                            time.sleep(15)
-                    time.sleep(3)
-                    PROCESSED_REPLY_BUFFER.append(user)
-                    with open("replies.txt", "a+") as replyFile:
-                        replyFile.write(user + "\n")
+                for user,replies in replies.items():
+                    for reply in replies:
+                        logger.info(f"Processing SIGNAL REPLY from {user}")
+                        replyToken = badgeSubmitToken(reply["token"])
+                        if replyToken == True:
+                            try:
+                                sesh.put(dc29SignalChatReact.format(dc29SignalChat=dc29SignalChat, messageID=reply["messageId"]))
+                            except urllib3.exceptions.ProtocolError:
+                                logger.warning("Connection error talking to Discord, waiting 15 seconds before continuing")
+                                time.sleep(15)
+                        time.sleep(3)
+                        PROCESSED_REPLY_BUFFER.append(user)
+                        with open("replies.txt", "a+") as replyFile:
+                            replyFile.write(user + "\n")
 
                 if lastReqID != LAST_MESSAGE_ID:
                     backoffNow = backoffStart
